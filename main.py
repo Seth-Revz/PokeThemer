@@ -176,27 +176,33 @@ def rebuild_xml_image_areas(theme_dir: str, file: str):
             rebuild_xml_image_areas(theme_dir, node.getAttribute('filename'))
 
 if __name__ == '__main__':
+    theme_folder = 'themes'
     temp_folder = 'temp'
     output_folder = 'output'
 
     if not os.path.exists(temp_folder):
         os.makedirs(temp_folder)
     
-    theme = 'default'
-    
-    # if os.path.exists(f'{temp_folder}/{theme}'):
-    #     shutil.rmtree(f'{temp_folder}/{theme}')
-    # modifiable_theme = shutil.copytree(theme, f'{temp_folder}/{theme}')
+    # theme = 'default'
+    # entry_file = 'twl-themer-load.xml'
 
-    # decomp_xml_image_areas(modifiable_theme, 'twl-themer-load.xml')
+    theme = 'archetype'
+    entry_file = 'theme.xml'
+    # IN UI ASK FOR ENTRY FILE
     
-    modifiable_theme = f'{temp_folder}/{theme}'
-    rebuild_xml_image_areas(modifiable_theme, 'twl-themer-load.xml')
+    if os.path.exists(f'{temp_folder}/{theme}'):
+        shutil.rmtree(f'{temp_folder}/{theme}')
+    modifiable_theme = shutil.copytree(f'{theme_folder}/{theme}', f'{temp_folder}/{theme}')
 
-    if os.path.exists(f'{output_folder}/{theme}'):
-        shutil.rmtree(f'{output_folder}/{theme}')
-    shutil.copytree(modifiable_theme, f'{output_folder}/{theme}')
-    shutil.rmtree(f'{output_folder}/{theme}/theme_decomp')
+    decomp_xml_image_areas(modifiable_theme, entry_file)
+    
+    # modifiable_theme = f'{temp_folder}/{theme}'
+    # rebuild_xml_image_areas(modifiable_theme, entry_file)
+
+    # if os.path.exists(f'{output_folder}/{theme}'):
+    #     shutil.rmtree(f'{output_folder}/{theme}')
+    # shutil.copytree(modifiable_theme, f'{output_folder}/{theme}')
+    # shutil.rmtree(f'{output_folder}/{theme}/theme_decomp')
 
 
 
