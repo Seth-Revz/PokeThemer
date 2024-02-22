@@ -1,33 +1,62 @@
 from xml.dom.minidom import parse, Node
 import os
-from glob import glob
 from PIL import Image
 
-def dump_theme(theme: str):
-    result = [y for x in os.walk(theme) for y in glob(os.path.join(x[0], '*.xml'))]
-    # print(*result, sep='\n')
 
-    for file in result:
+def decomp_xml_image_areas(theme_dir: str, file: str, constant_definitions = {}):
+    document = parse(f'{theme_dir}/{file}')
 
-        tree = ET.parse(file)
-        root = tree.getroot()
+    for node in document.documentElement.childNodes:
+        if node.nodeType != Node.ELEMENT_NODE:
+            continue
 
-        for element in tree.findall('images'):
+        if node.nodeName == 'constantDef':
+            if node.firstChild.nodeValue:
+                constant_definitions[node.getAttribute('name')] = node.firstChild.nodeValue
 
-            image_path = element.attrib['file']
+        if node.nodeName == 'images'and node.hasAttribute('file'):
+            image_path = node.getAttribute('file')
             if '.png' not in image_path:
-                continue
+                continue # TODO Find REF to image
 
-            output_folder_name = 'output/' + image_path.split('/')[-1].rstrip('.png')
+            img = Image.open(f'{theme_dir}/{image_path}')
+            coordinates = []
+            output_folder_name = f"output/{theme_dir}_decomp/{image_path.split('/')[-1].rstrip('.png')}"
+                
+            for child in node.childNodes:
+                if child.nodeType != Node.ELEMENT_NODE:
+                    continue
 
-            img = Image.open(f'{theme}/{image_path}')
+                if child.nodeName in ['area', 'cursor'] and child.hasAttribute('xywh'):
+                    name = child.getAttribute('name')
 
-            for item in element:
-                if item.tag in ['area', 'cursor']:
-                    name = item.attrib['name']
-                    if 'xywh' in item.attrib and item.attrib['xywh'] != '*':
-                        x, y, w, h = [int(x) for x in item.attrib['xywh'].split(',')]
+                    if '*' in child.getAttribute('xywh'):
+                        continue # TODO Wildcard used for full images
 
+                    x, y, w, h = [int(x) for x in child.getAttribute('xywh').split(',')]
+
+                    if w < 0:
+                        continue 
+
+                    if h < 0:
+                        h = abs(h)
+                    
+                    sprite = img.crop((x, y, x+w, y+h))
+                    if not os.path.exists(output_folder_name):
+                        os.makedirs(output_folder_name)
+                    sprite.save(f'{output_folder_name}/{name}.png')
+                
+                elif child.nodeName in ['select', 'grid']:
+                    name = child.getAttribute('name')
+                    index = 0
+                    for area in [ node for node in child.childNodes if node.nodeName == 'area' and node.hasAttribute('xywh') ]:
+                        if '*' in child.getAttribute('xywh'):
+                            continue # TODO Wildcard used for full images
+
+                        x, y, w, h = [int(x) for x in area.getAttribute('xywh').split(',')]
+                        if (x, y, w, h) in coordinates:
+                            continue
+                        coordinates.append((x,y,w,h))
                         # print(name, x, y, w, h)
 
                         if w < 0:
@@ -36,105 +65,25 @@ def dump_theme(theme: str):
                         if h < 0:
                             h = abs(h)
                         
-                        cut = img.crop((x, y, x+w, y+h))
-                        if not os.path.exists(output_folder_name):
-                            os.makedirs(output_folder_name)
-                        cut.save(f'{output_folder_name}/{name}.png')
-
-                elif item.tag == 'select':
-                    name = item.attrib['name']
-                    areas = item.findall('area')
-                    index = 0
-                    for area in areas:
-                        if 'xywh' in area.attrib and area.attrib['xywh'] != '*':
-                            x, y, w, h = [int(x) for x in area.attrib['xywh'].split(',')]
-
-                            # print(name, x, y, w, h)
-
-                            if w < 0:
-                                continue 
-
-                            if h < 0:
-                                h = abs(h)
-                            
-                            cut = img.crop((x, y, x+w, y+h))
-                            if not os.path.exists(f'{output_folder_name}/{name}'):
-                                os.makedirs(f'{output_folder_name}/{name}')
-                            cut.save(f'{output_folder_name}/{name}/{name}_{index}.png')
-                            index += 1
-                elif item.tag == 'grid':
-                    name = item.attrib['name']
-                    areas = item.findall('area')
-                    index = 0
-                    for area in areas:
-                        if 'xywh' in area.attrib and area.attrib['xywh'] != '*':
-                            x, y, w, h = [int(x) for x in area.attrib['xywh'].split(',')]
-
-                            # print(name, x, y, w, h)
-
-                            if w < 0:
-                                continue 
-
-                            if h < 0:
-                                h = abs(h)
-                            
-                            cut = img.crop((x, y, x+w, y+h))
-                            if not os.path.exists(f'{output_folder_name}/{name}'):
-                                os.makedirs(f'{output_folder_name}/{name}')
-                            cut.save(f'{output_folder_name}/{name}/{name}_{index}.png')
-                            index += 1
+                        sprite = img.crop((x, y, x+w, y+h))
+                        if not os.path.exists(f'{output_folder_name}/{name}'):
+                            os.makedirs(f'{output_folder_name}/{name}')
+                        sprite.save(f'{output_folder_name}/{name}/{name}_{index}.png')
+                        index += 1
                 else:
-                    search = item.findall('area')
-                    for i in search:
-                        print(i)
+                    search = child.getElementsByTagName('area')
+                    if search:
+                        for i in search:
+                            print(i)
 
-
-def read_xml(file: str):
-    xml_complete = None
-
-    tree = ET.parse(f'{theme}/twl-themer-load.xml', )
-
-    elem_list = []
-    elem_dict = {}
-
-    for top_level_elem in tree.getroot():
-        elem_list.append(top_level_elem.tag)
-        if top_level_elem.tag not in elem_dict:
-            elem_dict[top_level_elem.tag] = []
-        
-        if top_level_elem.tag == 'constantDef':
-            for e in [elem for elem in top_level_elem.iter() if elem is not top_level_elem]:
-                pass
-            elem_dict[top_level_elem.tag].append({top_level_elem.attrib['name']: top_level_elem.text})
-
-    print(elem_dict)
+        if node.nodeName == 'include' and node.hasAttribute('filename'):
+            decomp_xml_image_areas(theme_dir, node.getAttribute('filename'), constant_definitions)
     
-def testing(theme_dir: str, file: str):
-    print(file)
+    print(*constant_definitions.values(), sep='\n')
 
-    document = parse(f'{theme_dir}/{file}')
-
-    for node in document.documentElement.childNodes:
-        if node.nodeType == Node.ELEMENT_NODE:
-            
-
-
-            if node.nodeName == 'include' and node.hasAttribute('filename'):
-                testing(theme_dir, node.getAttribute('filename'))
+def rebuild_xml_image_areas():
+    pass
 
 if __name__ == '__main__':
     theme = 'default'
-    testing(theme, 'twl-themer-load.xml')
-
-    # result = [y for x in os.walk(theme) for y in glob(os.path.join(x[0], '*.xml'))]
-
-    # node_names = []
-
-    # for f in result:
-    #     document = parse(f'{f}')
-
-    #     for node in document.documentElement.childNodes:
-    #         if node.nodeType == Node.ELEMENT_NODE:
-    #             if node.nodeName not in node_names:
-    #                 node_names.append(node.nodeName)
-    #                 print(node.nodeName)
+    decomp_xml_image_areas(theme, 'twl-themer-load.xml')
