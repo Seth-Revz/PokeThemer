@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
     QToolBar,
     QFileDialog,
     QFileSystemModel,
-    QListView,
+    QLineEdit,
     QTreeView,
     QHBoxLayout,
     QVBoxLayout,
@@ -37,7 +37,7 @@ from pokethemer import decomp_xml_image_areas, rebuild_xml_image_areas
 import platform
 import shutil
 
-WINDOW_WIDTH = 800
+WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 600
 TEMP_DIR = 'temp'
 
@@ -46,11 +46,11 @@ class Label(QLabel):
     def __init__(self):
         super(Label, self).__init__()
         self.pixmap_width: int = 1
-        self.pixmapHeight: int = 1
+        self.pixmap_height: int = 1
 
     def setPixmap(self, pm: QPixmap) -> None:
         self.pixmap_width = pm.width()
-        self.pixmapHeight = pm.height()
+        self.pixmap_height = pm.height()
 
         self.updateMargins()
         super(Label, self).setPixmap(pm)
@@ -62,19 +62,19 @@ class Label(QLabel):
     def updateMargins(self):
         if self.pixmap() is None:
             return
-        pixmapWidth = self.pixmap().width()
-        pixmapHeight = self.pixmap().height()
-        if pixmapWidth <= 0 or pixmapHeight <= 0:
+        self.pixmap_width = self.pixmap().width()
+        self.pixmap_height = self.pixmap().height()
+        if self.pixmap_width <= 0 or self.pixmap_height <= 0:
             return
         w, h = self.width(), self.height()
         if w <= 0 or h <= 0:
             return
 
-        if w * pixmapHeight > h * pixmapWidth:
-            m = int((w - (pixmapWidth * h / pixmapHeight)) / 2)
+        if w * self.pixmap_height > h * self.pixmap_width:
+            m = int((w - (self.pixmap_width * h / self.pixmap_height)) / 2)
             self.setContentsMargins(m, 0, m, 0)
         else:
-            m = int((h - (pixmapHeight * w / pixmapWidth)) / 2)
+            m = int((h - (self.pixmap_height * w / self.pixmap_width)) / 2)
             self.setContentsMargins(0, m, 0, m)
 
 class NameDelegate(QStyledItemDelegate):
@@ -171,6 +171,8 @@ class MainWindow(QMainWindow):
 
         self.proxy_model = QSortFilterProxyModel()
         self.proxy_model.setSourceModel(self.model)
+        self.proxy_model.setRecursiveFilteringEnabled(True);
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive);
 
         self.sprite_list = QTreeView()
         self.sprite_list.setModel(self.proxy_model)
@@ -185,8 +187,17 @@ class MainWindow(QMainWindow):
         self.sprite_list.hideColumn(2)
         self.sprite_list.hideColumn(3)
 
+        self.search_edit = QLineEdit()
+        self.search_edit.setMinimumWidth(WINDOW_WIDTH // 3.5)
+        self.search_edit.setMaximumWidth(WINDOW_WIDTH // 3)
+        self.search_edit.textEdited.connect(self.search_list)
+
+        file_vbox = QVBoxLayout()
+        file_vbox.addWidget(self.search_edit)
+        file_vbox.addWidget(self.sprite_list)
+
         layout = QHBoxLayout(widget)
-        layout.addWidget(self.sprite_list, alignment=Qt.AlignmentFlag.AlignLeft)
+        layout.addLayout(file_vbox)
 
         self.sprite_image_label = Label() 
         # pixmap = QPixmap(f'{self.theme_dir}/main.png')
@@ -241,6 +252,9 @@ class MainWindow(QMainWindow):
         rebuild_xml_image_areas(self.theme_entry_file, self.theme_dir)
         self.open_directory(f'{self.theme_dir}/output')
 
+    def search_list(self, text):
+        self.proxy_model.setFilterFixedString(text)
+
     def list_clicked(self, current_selection, previous_selection):
 
         if not QFileInfo(self.model.filePath(self.proxy_model.mapToSource(current_selection))).isFile():
@@ -256,8 +270,13 @@ class MainWindow(QMainWindow):
 
     def refresh_sprite_preview(self):
         pixmap = QPixmap(self.selected_sprite_fullpath)
+        w = pixmap.width()
+        ratio = 1
+        while w > 1600:
+            ratio += 1
+            w = pixmap.width() // ratio
 
-        self.sprite_image_label.setPixmap(pixmap.scaled(QSize(pixmap.size().width(), pixmap.size().height()), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.FastTransformation))
+        self.sprite_image_label.setPixmap(pixmap.scaled(QSize(pixmap.size().width() / ratio, pixmap.size().height()), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.FastTransformation))
         self.sprite_image_label.setScaledContents(False)
 
     def single_replace_sprite(self, idx):
