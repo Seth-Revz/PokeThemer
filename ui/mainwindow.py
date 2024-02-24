@@ -6,6 +6,7 @@ from PySide6.QtCore import (
     QPoint,
     QProcess,
     QSize,
+    QSortFilterProxyModel,
 )
 
 from PySide6.QtGui import (
@@ -34,9 +35,11 @@ from PySide6.QtWidgets import (
 
 from pokethemer import decomp_xml_image_areas, rebuild_xml_image_areas
 import platform
+import shutil
 
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
+TEMP_DIR = 'temp'
 
 class Label(QLabel):
 
@@ -111,7 +114,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowIcon(QIcon('./ui/icon.png'))
         self.setWindowTitle('PokeThemer')
-        self.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)
+        self.setGeometry(50, 50, WINDOW_WIDTH, WINDOW_HEIGHT)
 
         self.toolbar = QToolBar('Main Toolbar')
         self.toolbar.setMovable(False)
@@ -166,9 +169,12 @@ class MainWindow(QMainWindow):
         self.model.setIconProvider(EmptyIconProvider())
         self.model.setRootPath(f'{self.theme_dir}/{self.decomp_dir}')
 
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.model)
+
         self.sprite_list = QTreeView()
-        self.sprite_list.setModel(self.model)
-        self.sprite_list.setRootIndex(self.model.index(f'{self.theme_dir}/{self.decomp_dir}'))
+        self.sprite_list.setModel(self.proxy_model)
+        self.sprite_list.setRootIndex(self.proxy_model.mapFromSource(self.model.index(f'{self.theme_dir}/{self.decomp_dir}')))
         delegate = NameDelegate(self.sprite_list)
         self.sprite_list.setItemDelegate(delegate)
         # self.sprite_list.setViewMode(QListView.ViewMode.ListMode)
@@ -202,14 +208,24 @@ class MainWindow(QMainWindow):
     def open_theme(self):
 
         theme_dirname = QFileDialog.getExistingDirectory(self, 'Open Theme Folder')
+        theme_basedir = QDir(theme_dirname).dirName()
 
         if theme_dirname == '':
             return
+        
+        if not QDir().exists(TEMP_DIR):
+            QDir().mkdir(TEMP_DIR)
 
-        self.theme_dir = theme_dirname
-        if QFile.exists(f'{theme_dirname}/twl-themer-load.xml'):
+        if QDir().exists(f'{TEMP_DIR}/{theme_basedir}'):
+            QDir(f'{TEMP_DIR}/{theme_basedir}').removeRecursively()
+        
+        # TODO implement with QT in the future.
+        modifiable_theme = shutil.copytree(theme_dirname, f'{TEMP_DIR}/{theme_basedir}')
+
+        self.theme_dir = modifiable_theme
+        if QFile.exists(f'{self.theme_dir}/twl-themer-load.xml'):
             self.theme_entry_file = 'twl-themer-load.xml'
-        elif QFile.exists(f'{theme_dirname}/theme.xml'):
+        elif QFile.exists(f'{self.theme_dir}/theme.xml'):
             self.theme_entry_file = 'theme.xml'
         else:
             print('unknown entry file')
@@ -226,16 +242,15 @@ class MainWindow(QMainWindow):
         self.open_directory(f'{self.theme_dir}/output')
 
     def list_clicked(self, current_selection, previous_selection):
-        if not QFileInfo(self.model.filePath(current_selection)).isFile():
-            return
 
-        print(self.model.filePath(current_selection))
+        if not QFileInfo(self.model.filePath(self.proxy_model.mapToSource(current_selection))).isFile():
+            return
 
         if not self.replace_action.isVisible():
             self.replace_action.setVisible(True)
 
         self.selected_sprite_filename = current_selection.data()
-        self.selected_sprite_fullpath = self.model.filePath(current_selection)
+        self.selected_sprite_fullpath = self.model.filePath(self.proxy_model.mapToSource(current_selection))
         
         self.refresh_sprite_preview()
 

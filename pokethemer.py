@@ -196,41 +196,6 @@ def rebuild_xml_image_areas(file_path: str, top_level_dir: str):
         if node.nodeName == 'include' and node.hasAttribute('filename'):
             rebuild_xml_image_areas(f"{current_dir}/{node.getAttribute('filename')}", top_level_dir)
 
-# if __name__ == '__main__':
-#     theme_folder = 'themes'
-#     temp_folder = 'temp'
-#     output_folder = 'output'
-    
-#     # theme = 'themes/default'
-#     theme ='themes/archetype'
-
-#     print(os.path.basename(theme))
-
-#     if os.path.exists(f'{theme}/twl-themer-load.xml'):
-#         entry_file = 'twl-themer-load.xml'
-#     elif os.path.exists(f'{theme}/theme.xml'):
-#         entry_file = 'theme.xml'
-#     else:
-#         print('unknown entry file')
-#         exit()
-
-#     if not os.path.exists(temp_folder):
-#         os.makedirs(temp_folder)
-    
-#     if os.path.exists(f'{temp_folder}/{os.path.basename(theme)}'):
-#         shutil.rmtree(f'{temp_folder}/{os.path.basename(theme)}')
-#     modifiable_theme = shutil.copytree(theme, f'{temp_folder}/{os.path.basename(theme)}')
-
-#     decomp_xml_image_areas(f'{modifiable_theme}/{entry_file}', os.path.abspath(modifiable_theme))
-    
-#     # modifiable_theme = f'{temp_folder}/{theme}'
-#     rebuild_xml_image_areas(f'{modifiable_theme}/{entry_file}', os.path.abspath(modifiable_theme))
-
-#     if os.path.exists(f'{output_folder}/{theme}'):
-#         shutil.rmtree(f'{output_folder}/{theme}')
-#     shutil.copytree(modifiable_theme, f'{output_folder}/{theme}')
-#     shutil.rmtree(f'{output_folder}/{theme}/theme_decomp')
-
 if __name__ == '__main__':
     from ui.mainwindow import MainWindow
     from PySide6.QtWidgets import QApplication
