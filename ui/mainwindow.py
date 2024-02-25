@@ -31,7 +31,6 @@ from PySide6.QtWidgets import (
     QTreeView,
     QHBoxLayout,
     QVBoxLayout,
-    QStyledItemDelegate, 
     QFileIconProvider,
     QSizePolicy,
     QMessageBox,
@@ -43,7 +42,6 @@ import shutil
 
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 600
-TEMP_DIR = 'temp'
 DEFAULT_OUTPUT_DIR = 'output'
 
 class Label(QLabel):
@@ -198,18 +196,17 @@ class MainWindow(QMainWindow):
         file_vbox.addWidget(self.search_edit)
         file_vbox.addWidget(self.sprite_list)
 
-        label_vbox = QVBoxLayout()
-
         self.sprite_image_label = Label() 
-        # pixmap = QPixmap(f'{self.theme_dir}/main.png')
-        # self.sprite_image_label.setPixmap(pixmap.scaled(QSize(WINDOW_WIDTH, WINDOW_HEIGHT), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
         self.sprite_image_label.setScaledContents(True)
-
+        self.sprite_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
         self.size_label = QLabel()
         self.size_label.setStyleSheet("QLabel{font-size: 14pt;}")
+        self.size_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Maximum)
         self.size_label.setScaledContents(True)
         self.size_label.setAlignment(Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignBottom)
 
+        label_vbox = QVBoxLayout()
         label_vbox.addWidget(self.sprite_image_label, alignment=Qt.AlignmentFlag.AlignCenter)
         label_vbox.addWidget(self.size_label, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignBottom)
 
@@ -236,14 +233,13 @@ class MainWindow(QMainWindow):
         if theme_dirname == '':
             return
         
-        if not QDir().exists(TEMP_DIR):
-            QDir().mkdir(TEMP_DIR)
+        modifiable_theme = f'{theme_dirname}_pokethemer'
 
-        if QDir().exists(f'{TEMP_DIR}/{self.theme_basedir}'):
-            QDir(f'{TEMP_DIR}/{self.theme_basedir}').removeRecursively()
+        if QDir().exists(modifiable_theme):
+            QDir(modifiable_theme).removeRecursively()
         
         # TODO implement with QT in the future.
-        modifiable_theme = shutil.copytree(theme_dirname, f'{TEMP_DIR}/{self.theme_basedir}')
+        modifiable_theme = shutil.copytree(theme_dirname, modifiable_theme)
 
         self.theme_dir = modifiable_theme
         if QFile.exists(f'{self.theme_dir}/twl-themer-load.xml'):
@@ -251,9 +247,26 @@ class MainWindow(QMainWindow):
         elif QFile.exists(f'{self.theme_dir}/theme.xml'):
             self.theme_entry_file = 'theme.xml'
         else:
-            print('unknown entry file')
-            return
-        
+            entry_dialog = QInputDialog()
+            entry_dialog.setWindowIcon(QIcon('./ui/icon.png'))
+            entry_dialog_text, entry_dialog_bool = entry_dialog.getText(self, 'Entry File', 'Default entry file <b>twl-themer-load.xml</b> not found,<br/> please provide entry file name.')
+
+            if not entry_dialog_bool:
+                self.theme_entry_file = None
+                return
+
+            self.theme_entry_file = entry_dialog_text
+
+            if entry_dialog_text == '' or not QFile.exists(f'{self.theme_dir}/{self.theme_entry_file}'):
+                msgbox = QMessageBox(self)
+                msgbox.setWindowIcon(QIcon('./ui/icon.png'))
+                msgbox.setWindowTitle('Error')
+                msgbox.setText('Could not find specified file.')
+                msgbox.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msgbox.setDefaultButton(QMessageBox.StandardButton.Ok)
+                msgbox.exec()
+                return
+
         decomp_xml_image_areas(f'{self.theme_dir}/{self.theme_entry_file}', self.theme_dir)
         self.display_theme()
         
@@ -266,6 +279,9 @@ class MainWindow(QMainWindow):
         output_dir = f'{DEFAULT_OUTPUT_DIR}/{self.theme_basedir}'
 
         rebuild_xml_image_areas(f'{self.theme_dir}/{self.theme_entry_file}', self.theme_dir)
+
+        if QDir().exists(output_dir):
+            shutil.rmtree(output_dir)
 
         shutil.copytree(self.theme_dir, output_dir)
         shutil.rmtree(f'{output_dir}/theme_decomp')
