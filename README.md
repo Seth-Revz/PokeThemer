@@ -6,7 +6,7 @@ PokeThemer was created in hopes that it will help the community more easily crea
 
 ## Future 
 
-PokeThemer is a Work in Progress. Here are some things that will be worked on going forward.
+While PokeThemer is in a functional state, it is still a work in progress. Here are some things that will be worked on going forward.
 - More automated way of updating themes to current client version. Each update has the potential to break themes.
 - In app .xml modification/editor?
 
@@ -20,7 +20,7 @@ PokeThemer is a Work in Progress. Here are some things that will be worked on go
 
 ## Getting Started
 
-Checkout the source code with `git` or download it as a .zip file.
+Clone the source code with `git` or download it as a .zip file.
 
 ```bash
 git clone https://github.com/Seth-Revz/PokeThemer.git
