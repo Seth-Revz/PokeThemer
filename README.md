@@ -1,13 +1,14 @@
 PokeThemer
 ==========
 
-PokeThemer is python desktop application for decompiling [PokeMMO themes](https://forums.pokemmo.com/index.php?/forum/33-client-customization/) into separate sprites, replacing the sprites, and recompiling the theme.
-PokeThemer was created in hopes that it will help the community more easily create and modify themes. Along with keeping them up to date with the current client version.
+PokeThemer is python desktop application for decompiling spritessheets in [PokeMMO themes](https://forums.pokemmo.com/index.php?/forum/33-client-customization/) into separate sprites, replacing the sprites with your own, and recompiling the theme using the new sprites.
+PokeThemer was created in hopes that it will help the community more easily create and modify themes. Along with helping to keep them up to date with the current client version.
 
 ## Future 
 
 While PokeThemer is in a functional state, it is still a work in progress. Here are some things that will be worked on going forward.
-- More automated way of updating themes to current client version. Each update has the potential to break themes.
+- Add support for more image types. Currently only dumps `.pngs`
+- Create a more automated process of updating themes to the current client version. Each update has the potential to break themes.
 - In app .xml modification/editor?
 
 
