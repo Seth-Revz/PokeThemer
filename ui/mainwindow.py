@@ -382,12 +382,12 @@ class MainWindow(QMainWindow):
 
     def replace_sprite(self, src: str, dst: str):
         if not QFile.exists(dst) or QFile.remove(dst):
-            if not QFile.copy(src, dst):
-                print('Could not copy file')
-                return False
-            else:
+            if QFile.copy(src, dst):
                 if not self.save_toolbutton_action.isVisible():
                     self.save_toolbutton_action.setVisible(True)
+            else:
+                print('Could not copy file')
+                return False
         else:
             print('Could not remove file')
             return False
