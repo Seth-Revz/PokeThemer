@@ -46,3 +46,7 @@ python pokethemer.py
 
     <img alt='savetheme' width=600 src='https://github.com/Seth-Revz/PokeThemer/blob/main/.github/screenshot3.png'>  
 
+## Known Issues
+
+- Image elements that dont directly call a filename are ignored. (gameshop_\*, and effectivity_buttons_\*)
+- 
