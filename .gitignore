@@ -2,3 +2,7 @@
 \temp
 \output
 \themes
+
+pokethemer.spec
+build/
+dist/
